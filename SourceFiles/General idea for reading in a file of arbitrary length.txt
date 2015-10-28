@@ -1,0 +1,69 @@
+General idea for reading in a file of arbitrary length.
+
+-------------------------Get the correct number of buffers---------------------
+1) fscan the file to determine its size, int file_size
+2) each buffer will hold 16384 samples, therefore to determine the number of buffers needed, num_ofbuff, divide file_size by 16384---num_ofbuff = file_size/16384;
+3) malloc the needed buffers:
+for(i =0 ; i < num_ofbuff; i++){
+sigbuff[i] = malloc(sizeof float);
+}
+/*Note, sigbuff is a pointer to a float,    float* sigbuff      */
+-----------------------------------------------------------------
+
+4)  Copy the contents of the file into the buffers!
+float* tmp_ptr;
+for( k = 0; k < num_ofbuff; k++){
+
+	tmp_ptr = sigbuff[k]; /*start tmp_ptr at first element*/
+	for (i = 0; i < AWG_SIG_LEN; i++) {
+	/*Since, sigbuff is going to point to the first element of the first array of floats, I need a 	temporary 	pointer to walk through each element of the array!*/
+
+    	    read_size = fscanf(fi, "%f \n", tmp_ptr);
+        	tmp_ptr ++; /*move to next element of s*/
+			if((read_size == EOF) || (read_size != 1)) {
+            	i--;
+            	break;
+        	}
+
+	}
+}
+
+----------------------------------------------------------------------------
+Note to trouble shoot this I should:
+
+1) [DONE!!!!!!] verify that the code:
+		read_size = fscanf(fi, "%f \n", &ch_data[i]);
+	Does indeed return the number of entities contained in a file.
+2) [DONE!!!!!!]verify that the code: 
+		for(i =0 ; i < num_ofbuff; i++){
+			sigbuff[i] = malloc(sizeof float);
+		}
+	Does indeed create an array of arrays that can then be "walked through"
+	To test this I will do the following:
+		A) Create a csv file that is 7 samples long. I will store the file into 2 sample long buffers	
+				therefore, this file will be stored into 3 buffers, each 2 samples long. The final sample		
+				will be discarded.
+		B) Practice gaining access to the values by Print each buffer onto the screen: For example
+				the data of test A) will present as follows:
+				12
+				34
+				56
+			To accomplish this the following should happen:
+				/*Copy the contents of the file into the buffers*/
+		for( i = 0; i < num_ofbuff; i++){
+			tmpptr = *sigbuff; /*start tmpptr at first element of array of buffers*/
+
+			for (k = 0; k < BUFFSIZE; k++) {
+				printf("%f", *tmpptr)
+				tmpptr++; /*move to next element of buffer*/
+			
+			}
+			sigbuff++; /*move to first element of next buffer*/
+		}
+3) The next step to do is to use the array of buffers to "synthesize the signal". I have to think of how to access each buffer and the data signals will also be in an array!
+	One of the big things to note is that data goes into synthesize_signal as a float, and returns as an int32_t data type
+	A) I have now successfully copied/created syntesize_signal2, I still need to calloc the data_out buffers within the read_file_in2 function
+4) I have now synthesized the signal, I now need to pass the data contained in the "dataout" buffers to the FPGA buffer
+				
+	
+	
